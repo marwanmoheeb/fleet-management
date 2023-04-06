@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Trip;
-use App\Models\city;
+use App\Models\City;
+use App\Models\Seat;
+use App\Models\Booking;
+use App\Http\Resources\TripResource;
 
 class TripsController extends Controller
 {
@@ -27,16 +30,22 @@ class TripsController extends Controller
             if (!array_key_exists($trip->start_city,$graph)){
                 $graph[$trip->start_city] =[];
             }
-            $graph[$trip->start_city][] = $trip->end_city;
+            $graph[$trip->start_city][] = ['city'=>$trip->end_city,'bus'=>$trip->bus_id];
+
+            if (!array_key_exists($trip->end_city,$graph)){
+                $graph[$trip->end_city] =[];
+            }
         }
 
         $paths = [];
+        
+        //preform depth first search on the graph
+        $this->depthFirst($from,[['city'=>$from,"bus"=>null]],[$from],$to,$graph,$paths);
 
-        // dd($graph);
+        
 
-        $this->depthFirst($from,[$from],[$from],$to,$graph,$paths);
-
-        dd($paths);
+        // used resource to make json more understandable
+        return response()->json(TripResource::collection($paths));
 
 
 
@@ -48,6 +57,7 @@ class TripsController extends Controller
 
     private function depthFirst($current,$path,$visited,$end,$graph, &$paths){
 
+        // if reached destination then path is found and stop search
         if ($current == $end){
             $paths[]=$path;
             return ;
@@ -56,9 +66,14 @@ class TripsController extends Controller
         // dd($graph[$current]);
         foreach($graph[$current] as $next){
 
-            if (!in_array($next,$visited)){
+            if (!in_array($next['city'],$visited)){
                 //if not visited
-                $this->depthFirst($next,array_merge($path,[$next]),array_merge($visited,[$next]),$end,$graph,$paths);
+                //get the count of booked seats
+                $booked_seats =  Booking::where('from',$current)->where('to',$next['city'])->where('bus_id',$next['bus'])->count();
+                if ($booked_seats < 12){
+                    // call search recursive until reaching end destination
+                    $this->depthFirst($next['city'],array_merge($path,[$next]),array_merge($visited,[$next['city']]),$end,$graph,$paths);
+                }
             }
         }
     }
