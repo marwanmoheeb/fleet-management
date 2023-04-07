@@ -19,7 +19,7 @@ class TripResource extends JsonResource
         $intial = $collection->where('bus',"")->first();
         return [
             'start' => City::find($intial['city'])->name, // starting city
-            'buses' => BusResource::collection($collection->where('bus',"!=","")->groupBy('bus')) // buses that are needed to reach destination
+            'path' => BusResource::collection($collection->where('bus',"!=","")->groupBy('bus')) // buses that are needed to reach destination
         ];
     }
 }
