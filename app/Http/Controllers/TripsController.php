@@ -30,19 +30,17 @@ class TripsController extends Controller
             if (!array_key_exists($trip->start_city,$graph)){
                 $graph[$trip->start_city] =[];
             }
-            $graph[$trip->start_city][] = ['city'=>$trip->end_city,'bus'=>$trip->bus_id];
+            $graph[$trip->start_city][] = ['city'=>$trip->end_city,'bus'=>$trip->bus_id , 'trip' => $trip->id];
 
             if (!array_key_exists($trip->end_city,$graph)){
                 $graph[$trip->end_city] =[];
             }
         }
-
         $paths = [];
         
         //preform depth first search on the graph
-        $this->depthFirst($from,[['city'=>$from,"bus"=>null]],[$from],$to,$graph,$paths);
+        $this->depthFirst($from,[['city'=>$from,"bus"=>null ,'trip'=>null]],[$from],$to,$graph,$paths);
 
-        
 
         // used resource to make json more understandable
         return response()->json(TripResource::collection($paths));
@@ -53,6 +51,10 @@ class TripsController extends Controller
     
     }
 
+
+    private function get(){
+
+    }
 
 
     private function depthFirst($current,$path,$visited,$end,$graph, &$paths){
@@ -69,7 +71,7 @@ class TripsController extends Controller
             if (!in_array($next['city'],$visited)){
                 //if not visited
                 //get the count of booked seats
-                $booked_seats =  Booking::where('from',$current)->where('to',$next['city'])->where('bus_id',$next['bus'])->count();
+                $booked_seats =  Booking::where('trip_id',$next['trip'])->count();
                 if ($booked_seats < 12){
                     // call search recursive until reaching end destination
                     $this->depthFirst($next['city'],array_merge($path,[$next]),array_merge($visited,[$next['city']]),$end,$graph,$paths);

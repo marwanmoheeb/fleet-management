@@ -17,6 +17,7 @@ class BusResource extends JsonResource
     public function toArray(Request $request): array
     {
         $path = "";
+        $trips = [];
         foreach($this->resource as $stop){
 
             if ($path ==""){
@@ -24,12 +25,18 @@ class BusResource extends JsonResource
             }else{
                 $path =$path.'->'.City::find($stop['city'])->name;
             }
+
+            array_push($trips,$stop['trip']);
         }
+
+        // dd($trips);
         $bus =  $this->resource->first()['bus'];
 
 
-        // get the unbooked seats
-        $seats = Seat::whereDoesntHave('booking')->where('bus_id',$bus)->get()->pluck('name');
+        // get the unbooked seats during the trips that the user is going on 
+        $seats = Seat::whereDoesntHave('booking',function($q) use ($trips,$bus){
+            $q->whereIn('trip_id',$trips);
+        })->where('bus_id',$bus)->get()->pluck('name');
 
         return [
             'bus' =>$bus,// bus id 
