@@ -20,3 +20,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('trips/get',[TripsController::class, 'getTrips']);
+Route::post('book',[TripsController::class, 'create']);

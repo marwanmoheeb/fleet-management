@@ -8,6 +8,8 @@ use App\Models\City;
 use App\Models\Seat;
 use App\Models\Booking;
 use App\Http\Resources\TripResource;
+use Illuminate\Support\Facades\Log;
+
 
 class TripsController extends Controller
 {
@@ -20,8 +22,100 @@ class TripsController extends Controller
             'to' => 'required|exists:cities,name',
         ]);
 
-        $from = City::where('name',request()->from)->first()->id;
-        $to = City::where('name',request()->to)->first()->id;
+        //get all possible paths
+       $paths = $this->get(request()->from,request()->to);
+
+        // used resource to organize data 
+        return response()->json(TripResource::collection($paths));
+
+    }
+
+    public function create(){
+        $validated = request()->validate([
+            'from' => 'required|exists:cities,name',
+            'to' => 'required|exists:cities,name',
+            'customer' => 'required',
+            'bus'=> 'required', // user choose bus in case there are more than one path going to same location
+            'seat' => 'exists:seats,name'
+        ]);
+
+        // get all the paths to make sure bus exists
+        $paths = collect($this->get(request()->from,request()->to));
+        if (!$paths->first()){
+            return response()->json('this route is not available, please check listing again',422);
+
+        }
+        $bus_id = request()->bus;
+        $found = 0;
+        $bus = $paths->first(function($array) use($bus_id,$found){
+            foreach($array as $a){
+                if ($found ==1){
+                    break;
+                }
+                if ($a['bus'] == $bus_id){
+                    $found = 1;
+                    return $array;
+                }
+            }
+        });
+
+        if (!$bus){
+            return response()->json('bus not avaiable for that route please check list again',422);
+        }
+
+        $path = "";
+        $trips = [];
+        foreach($bus as $stop){
+
+            if ($path ==""){
+                $path = City::find($stop['city'])->name;
+            }else{
+                $path =$path.'->'.City::find($stop['city'])->name;
+            }
+
+            array_push($trips,$stop['trip']);
+        }
+
+
+        $bookings = [];// trips to be booked
+        $seats = Seat::whereDoesntHave('booking',function($q) use ($trips,$bus_id){
+            $q->whereIn('trip_id',$trips);
+        })->where('bus_id',$bus_id)->get();
+
+        if (isset(request()->seat)){
+            $seat =$seats->where('name',request()->seat)->first();
+            if ( $seat== null){
+                return response()->json('seat is not available choose another seat or leave empty to get any seat',422);
+            }
+        }else{
+            $seat = $seats->first();
+        }
+
+        foreach($bus as $b ){
+            if ($b['trip']== null){
+                continue;
+            }
+            $bookings[]=array('name'=>request()->customer,'seat_id'=>$seat->id,'trip_id'=>$b['trip']);
+        }
+
+        try{
+            Booking::insert($bookings);
+
+            return response()->json(array('seat'=>$seat->name,'path'=>$path,'bus'=>$bus_id),200);
+
+        }catch(Exception $e){
+            Log::error('error inserting bookings');
+            Log::error($e);
+            return response()->json('error please try again',500);
+
+        }
+
+    }
+
+
+    private function get($from,$to){
+        $from = City::where('name',$from)->first()->id;
+        $to = City::where('name',$to)->first()->id;
         $trips = Trip::get();
 
         $graph=[];
@@ -41,19 +135,7 @@ class TripsController extends Controller
         //preform depth first search on the graph
         $this->depthFirst($from,[['city'=>$from,"bus"=>null ,'trip'=>null]],[$from],$to,$graph,$paths);
 
-
-        // used resource to make json more understandable
-        return response()->json(TripResource::collection($paths));
-
-
-
-
-    
-    }
-
-
-    private function get(){
-
+        return $paths;
     }
 
 
