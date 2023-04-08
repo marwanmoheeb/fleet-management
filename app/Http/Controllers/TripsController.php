@@ -42,8 +42,7 @@ class TripsController extends Controller
         // get all the paths to make sure bus exists
         $paths = collect($this->get(request()->from,request()->to));
         if (!$paths->first()){
-            return response()->json('this route is not available, please check listing again',422);
-
+            return response()->json(array("message"=>'this route is not available, please check listing again'),422);
         }
         $bus_id = request()->bus;
         $found = 0;
@@ -60,7 +59,7 @@ class TripsController extends Controller
         });
 
         if (!$bus){
-            return response()->json('bus not avaiable for that route please check list again',422);
+            return response()->json(array("message"=>'bus not avaiable for that route please check list again'),422);
         }
 
         $path = "";
@@ -85,7 +84,7 @@ class TripsController extends Controller
         if (isset(request()->seat)){
             $seat =$seats->where('name',request()->seat)->first();
             if ( $seat== null){
-                return response()->json('seat is not available choose another seat or leave empty to get any seat',422);
+                return response()->json(array("message"=>'seat is not available choose another seat or leave empty to get any seat'),422);
             }
         }else{
             $seat = $seats->first();
