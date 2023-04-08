@@ -10,14 +10,18 @@
 CREATE TABLE `bookings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
-  `seat_id` int(11) DEFAULT NULL,
-  `trip_id` int(11) DEFAULT NULL,
+  `seat_id` int(10) unsigned DEFAULT NULL,
+  `trip_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  UNIQUE KEY `id` (`id`),
+  KEY `seat_id` (`seat_id`),
+  KEY `trip_id` (`trip_id`),
+  CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`seat_id`) REFERENCES `seats` (`id`),
+  CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `bus` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
@@ -31,29 +35,28 @@ CREATE TABLE `cities` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `seats` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
-  `bus_id` int(10) DEFAULT NULL,
-  UNIQUE KEY `id` (`id`)
+  `bus_id` int(10) unsigned DEFAULT NULL,
+  UNIQUE KEY `id` (`id`),
+  KEY `bus_id` (`bus_id`),
+  CONSTRAINT `seats_ibfk_1` FOREIGN KEY (`bus_id`) REFERENCES `bus` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `trips` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `start_city` int(10) unsigned DEFAULT NULL,
   `end_city` int(10) unsigned DEFAULT NULL,
   `bus_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `id` (`id`)
+  UNIQUE KEY `id` (`id`),
+  KEY `bus_id` (`bus_id`),
+  CONSTRAINT `trips_ibfk_1` FOREIGN KEY (`bus_id`) REFERENCES `bus` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `bookings` (`id`, `name`, `seat_id`, `trip_id`) VALUES
 (1, 'marwan', 1, 3);
-INSERT INTO `bookings` (`id`, `name`, `seat_id`, `trip_id`) VALUES
-(6, 'test', 2, 2);
-INSERT INTO `bookings` (`id`, `name`, `seat_id`, `trip_id`) VALUES
-(7, 'test', 2, 3);
-INSERT INTO `bookings` (`id`, `name`, `seat_id`, `trip_id`) VALUES
-(8, 'test', 2, 4);
+
 
 INSERT INTO `bus` (`id`, `name`) VALUES
 (1, 'bus1');
